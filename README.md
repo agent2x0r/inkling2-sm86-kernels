@@ -17,6 +17,43 @@ Tested on **2× NVIDIA GeForce RTX 3090** (`SM86`, 24 GiB GDDR6X each, 225 W pow
 
 ---
 
+## Exact Checkpoint & Precision Breakdown
+
+All runs use the **single official, unmodified upstream safetensors checkpoint** from Hugging Face (**no GGUF, no third-party re-quantization**):
+
+- **Hugging Face Repo & Revision:** [`thinkingmachines/Inkling-2-Mini`](https://huggingface.co/thinkingmachines/Inkling-2-Mini) @ `ed40e7da625f594fc9c4990f5f66be24873c22d7`
+- **Files:** `model-00001-of-00001.safetensors` (`18.19 GiB`, 1,244 tensors) + `mtp.safetensors` (`0.59 GiB`, 54 tensors)
+- **Quantization recipe (`config.json` + `hf_quant_config.json`):** `modelopt` mixed-precision checkpoint (`quant_algo: "NVFP4"` at top level, per-layer mixed precision below):
+
+| Component | Weight Format in Safetensors | Size | Execution on SM86 (RTX 3090) |
+| :--- | :--- | ---: | :--- |
+| **Routed MoE Experts — Layers `0–19`** (40 tensors) | **NVFP4** (`E2M1` packed `uint8`, `1×16` blocks, `FP8 E4M3` scales + outer `amax`) | `9.61 GiB` | Humming `sm_86` **W4A16** (register dequant → BF16 Tensor Cores) |
+| **Routed MoE Experts — Layers `20–23`** (8 tensors) | **MXFP8** (`FP8 E4M3`, `32×32` blocks, `UE8M0` scales) | `4.98 GiB` | Humming `sm_86` **W8A16** (register dequant → BF16 Tensor Cores) |
+| **Attention, Embeddings, `unembed`, Shared Experts, `short_conv`, Vision** (994 tensors) | **BF16** | `3.59 GiB` | Native BF16 Tensor Cores |
+| **Attention-Residual Queries & Norms** (74 tensors) | **FP32** | `<0.01 GiB` | Native FP32 |
+| **DSpark Speculative Draft Head (`mtp.safetensors`, 54 tensors)** | **BF16** | `0.59 GiB` | Native BF16 Tensor Cores |
+| **KV Cache** | **BF16** (`kv_cache_dtype=auto`, unquantized) | `6.28 GiB / GPU` | Unified hybrid PagedAttention (`5,712` blocks) |
+
+---
+
+## VRAM & KV-Cache Context Window Budget (2× RTX 3090, TP=2, BF16 KV)
+
+Measured live via `nvidia-smi` and vLLM startup profiling on `2× 24 GiB` RTX 3090s with DSpark (`num_speculative_tokens=7`) active:
+
+| Budget Item | Per-GPU VRAM (Live Shared Host) | Notes |
+| :--- | ---: | :--- |
+| **Model Weights (`TP=2` + BF16 DSpark `mtp`)** | **`9.99 GiB`** (`10.18 GiB` w/ CUDA ctx) | `~9.4 GiB` without DSpark (`ENABLE_DSPARK=0`) |
+| **CUDA Graphs + Transient Activation Reserve** | **`2.36 GiB`** | `0.34 GiB` CUDA graphs + `1.95 GiB` peak warmup reserve |
+| **Committed Unified Hybrid KV Cache (BF16)** | **`6.28 GiB`** (`5,712` blocks) | **`81,966` unified KV tokens** (`1.25×` at `65,536` ctx; `72.7%` peak KV usage verified on a `65,536`-token request) |
+| **Total `VLLM::Worker` Process (`nvidia-smi`)** | **`18.05 GiB`** (`18,484 MiB`) | Launched with `--gpu-memory-utilization 0.85` |
+| **Co-Resident Services on Test Host** | **`2.16 GiB`** (`2,212 MiB`) | Unrelated containers sharing both GPUs |
+| **Remaining Free Headroom (`nvidia-smi`)** | **`3.33 GiB`** (`3,410 MiB`) | Out of `24,576 MiB` (`24.0 GiB`) per RTX 3090 |
+
+**Dedicated Dual-RTX 3090 Headroom (no co-resident workloads):**
+With the entire `23.56 GiB` usable CUDA memory per card dedicated to vLLM (`--gpu-memory-utilization 0.92–0.95`), weights (`10.18 GiB`) + CUDA graphs/activation buffer (`2.36 GiB`) leave **`~9.6–10.2 GiB` / GPU** purely for KV cache (`1.53×–1.62×` our `6.28 GiB` pool) — scaling the unified BF16 KV pool to **`~125K–131K` tokens** (sufficient for a single **`128K`-context** session, `2×` concurrent `64K` streams, or `30+` concurrent `4K` coding sessions without KV cache quantization). Disabling DSpark (`ENABLE_DSPARK=0`) frees an additional `~0.6 GiB` of weights plus the DSpark draft KV group.
+
+---
+
 ## Why Stock `vllm/vllm-openai:inkling-2-mini` Fails on SM86 (and the Fix)
 
 1. **SM100-only compiled extensions in the stock Docker image.**
