@@ -1,0 +1,233 @@
+{
+  "model": "thinkingmachines/Inkling-2-Mini",
+  "timestamp": "2026-11-21T20:09:00Z",
+  "benchmarks": {
+    "mmmu_pro": {
+      "benchmark": "MMMU-Pro Standard 10",
+      "published_ref_pct": 74.9,
+      "total": 100,
+      "passed": 58,
+      "accuracy_pct": 58.0,
+      "elapsed_s": 288.2,
+      "agg_comp_tps": 439.7,
+      "failures": [
+        {
+          "idx": 0,
+          "id": "test_History_1",
+          "subject": "History",
+          "n_imgs": 1,
+          "passed": false,
+          "gold": "B",
+          "pred": "A",
+          "finish_reason": "stop",
+          "comp_tokens": 268
+        },
+        {
+          "idx": 1,
+          "id": "test_Accounting_42",
+          "subject": "Accounting",
+          "n_imgs": 1,
+          "passed": false,
+          "gold": "G",
+          "pred": null,
+          "finish_reason": "length",
+          "comp_tokens": 4096
+        },
+        {
+          "idx": 4,
+          "id": "test_Diagnostics_and_Laboratory_Medicine_28",
+          "subject": "Diagnostics_and_Laboratory_Medicine",
+          "n_imgs": 1,
+          "passed": false,
+          "gold": "F",
+          "pred": "H",
+          "finish_reason": "stop",
+          "comp_tokens": 819
+        },
+        {
+          "idx": 5,
+          "id": "test_Computer_Science_141",
+          "subject": "Computer_Science",
+          "n_imgs": 1,
+          "passed": false,
+          "gold": "J",
+          "pred": null,
+          "finish_reason": "length",
+          "comp_tokens": 4096
+        },
+        {
+          "idx": 7,
+          "id": "test_Psychology_163",
+          "subject": "Psychology",
+          "n_imgs": 1,
+          "passed": false,
+          "gold": "J",
+          "pred": "I",
+          "finish_reason": "stop",
+          "comp_tokens": 1872
+        },
+        {
+          "idx": 9,
+          "id": "test_Materials_165",
+          "subject": "Materials",
+          "n_imgs": 1,
+          "passed": false,
+          "gold": "A",
+          "pred": "H",
+          "finish_reason": "stop",
+          "comp_tokens": 1548
+        },
+        {
+          "idx": 15,
+          "id": "test_Music_293",
+          "subject": "Music",
+          "n_imgs": 1,
+          "passed": false,
+          "gold": "I",
+          "pred": "A",
+          "finish_reason": "stop",
+          "comp_tokens": 1584
+        },
+        {
+          "idx": 19,
+          "id": "test_Computer_Science_307",
+          "subject": "Computer_Science",
+          "n_imgs": 1,
+          "passed": false,
+          "gold": "C",
+          "pred": "B",
+          "finish_reason": "stop",
+          "comp_tokens": 2572
+        },
+        {
+          "idx": 20,
+          "id": "test_Sociology_140",
+          "subject": "Sociology",
+          "n_imgs": 1,
+          "passed": false,
+          "gold": "D",
+          "pred": "J",
+          "finish_reason": "stop",
+          "comp_tokens": 355
+        },
+        {
+          "idx": 24,
+          "id": "validation_Accounting_5",
+          "subject": "Accounting",
+          "n_imgs": 1,
+          "passed": false,
+          "gold": "H",
+          "pred": null,
+          "finish_reason": "length",
+          "comp_tokens": 4096
+        },
+        {
+          "idx": 27,
+          "id": "test_Public_Health_248",
+          "subject": "Public_Health",
+          "n_imgs": 1,
+          "passed": false,
+          "gold": "I",
+          "pred": "G",
+          "finish_reason": "stop",
+          "comp_tokens": 3666
+        },
+        {
+          "idx": 29,
+          "id": "test_Basic_Medical_Science_95",
+          "subject": "Basic_Medical_Science",
+          "n_imgs": 1,
+          "passed": false,
+          "gold": "B",
+          "pred": "E",
+          "finish_reason": "stop",
+          "comp_tokens": 1871
+        },
+        {
+          "idx": 30,
+          "id": "validation_Biology_20",
+          "subject": "Biology",
+          "n_imgs": 1,
+          "passed": false,
+          "gold": "F",
+          "pred": "A",
+          "finish_reason": "stop",
+          "comp_tokens": 274
+        },
+        {
+          "idx": 34,
+          "id": "test_Literature_46",
+          "subject": "Literature",
+          "n_imgs": 1,
+          "passed": false,
+          "gold": "E",
+          "pred": "C",
+          "finish_reason": "stop",
+          "comp_tokens": 521
+        },
+        {
+          "idx": 36,
+          "id": "test_Chemistry_354",
+          "subject": "Chemistry",
+          "n_imgs": 4,
+          "passed": false,
+          "gold": "A",
+          "pred": "C",
+          "finish_reason": "stop",
+          "comp_tokens": 1488
+        },
+        {
+          "idx": 38,
+          "id": "validation_Agriculture_8",
+          "passed": false,
+          "error": "api: HTTP Error 400: Bad Request",
+          "comp_tokens": 0
+        },
+        {
+          "idx": 39,
+          "id": "test_Architecture_and_Engineering_512",
+          "subject": "Architecture_and_Engineering",
+          "n_imgs": 1,
+          "passed": false,
+          "gold": "I",
+          "pred": null,
+          "finish_reason": "length",
+          "comp_tokens": 4096
+        },
+        {
+          "idx": 40,
+          "id": "test_Basic_Medical_Science_267",
+          "subject": "Basic_Medical_Science",
+          "n_imgs": 1,
+          "passed": false,
+          "gold": "H",
+          "pred": "F",
+          "finish_reason": "stop",
+          "comp_tokens": 1685
+        },
+        {
+          "idx": 44,
+          "id": "validation_Energy_and_Power_8",
+          "subject": "Energy_and_Power",
+          "n_imgs": 1,
+          "passed": false,
+          "gold": "I",
+          "pred": null,
+          "finish_reason": "length",
+          "comp_tokens": 4096
+        },
+        {
+          "idx": 47,
+          "id": "validation_Clinical_Medicine_5",
+          "subject": "Clinical_Medicine",
+          "n_imgs": 1,
+          "passed": false,
+          "gold": "H",
+          "pred": "A",
+          "finish_reason": "stop",
+          "comp_tokens": 467
+        }
+      ]
+    }
+  }
+}

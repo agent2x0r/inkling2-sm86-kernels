@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "inkling2-sm86-kernels"
+version = "0.1.0"
+description = "Hands-on Ampere (SM86 / Dual RTX 3090) custom kernel lab and vLLM bring-up for Thinking Machines Inkling 2 Mini"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=2.0",
+    "torch>=2.5",
+    "safetensors>=0.4.5",
+    "pytest>=8.3",
+    "triton>=3.2; sys_platform == 'linux'",
+]
+
+[tool.setuptools.packages.find]
+include = ["inkling_sm86*", "labs*", "vllm_sm86*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

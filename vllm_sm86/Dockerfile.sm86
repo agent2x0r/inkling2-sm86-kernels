@@ -1,0 +1,25 @@
+# Zero-C++-rebuild Ampere (SM80/SM86) Docker image for Inkling-2-Mini on upstream vLLM V1.
+#
+# Why this overlay is needed:
+#   `vllm/vllm-openai:inkling-2-mini` was built with `torch_cuda_arch_list="10.0+PTX 10.3+PTX"`
+#   (Blackwell-only), leaving `_C_stable_libtorch.abi3.so` and `_moe_C_stable_libtorch.abi3.so`
+#   without `sm_80`/`sm_86` cubins (`cudaErrorNoKernelImageForDevice` on Ampere).
+#
+#   Overlaying the matching multi-arch `cp38-abi3` vLLM wheel (`torch==2.14.0+cu130`, containing
+#   `sm_75/80/86/89/90/100/120` cubins + PR #69028) and running `apply_sm86_patch.py --installed`
+#   enables full NVFP4/MXFP8 MoE, vision (FA2), tool calling, reasoning, and 7-token DSpark
+#   speculative decoding on Ampere GPUs in ~60 seconds with zero C++ compilation.
+#
+# Build (from repo root):
+#   docker build -f vllm_sm86/Dockerfile.sm86 -t vllm-inkling2-sm86:latest .
+
+ARG BASE_IMAGE=vllm/vllm-openai:inkling-2-mini@sha256:c2dc759f5984f69c1e2418c6af7c26eb756f5ed2a8934c768ae1253645d1449e
+FROM ${BASE_IMAGE}
+
+ARG VLLM_WHEEL_URL=https://wheels.vllm.ai/7e792e6e105e3e83c0fc2ebecb0fccc0a49b0290/vllm-0.34.0rc1.dev1126%2Bg7e792e6e1-cp38-abi3-manylinux_2_28_x86_64.whl
+
+COPY vllm_sm86/apply_sm86_patch.py /opt/inkling2-sm86/apply_sm86_patch.py
+
+RUN pip install --no-deps --force-reinstall --no-cache-dir --break-system-packages \
+        "${VLLM_WHEEL_URL}" \
+ && python3 /opt/inkling2-sm86/apply_sm86_patch.py --installed

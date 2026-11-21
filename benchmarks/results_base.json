@@ -1,0 +1,348 @@
+{
+  "mode": "base",
+  "model": "thinkingmachines/Inkling-2-Mini",
+  "timestamp": "2026-11-21T20:17:41Z",
+  "greedy": [
+    {
+      "idx": 0,
+      "prompt": "Compute 347 * 892 step by step and state the final integer.",
+      "completion_tokens": 241,
+      "reasoning": "The user wants compute 347*892 step by step and final integer. Need compute accurately. Let's do manually.\n347*892 = 347*(900-8) = 347*900 - 347*8 = 312300 - 2776 = 309524. Check: 347*9=3123, add two zeros =312300. 347*8=2776. subtract =309524. Alternatively 892*300=267600; 892*40=35680; 892*7=6244; sum 267600+35680=303280; +6244=309524. Good.\nNeed present step by step concise. Ensure final integer. No need mention tool.",
+      "content": "347 \u00d7 892:\n\n- 347 \u00d7 800 = 277,600  \n- 347 \u00d7 90 = 31,230  \n- 347 \u00d7 2 = 694  \n\nAdd: 277,600 + 31,230 = 308,830; 308,830 + 694 = 309,524.\n\nFinal integer: **309,524**",
+      "decode_tps": 116.8
+    },
+    {
+      "idx": 1,
+      "prompt": "Write a Python function `is_prime(n: int) -> bool` using trial division up to sqrt(n).",
+      "completion_tokens": 252,
+      "reasoning": "The user wants a Python function is_prime(n) using trial division up to sqrt(n). Need provide code. Need consider edge cases: n < 2 false, n == 2 true, even false, loop i from 3 to int(sqrt(n)) step 2 or range(2, isqrt+1). Use math.isqrt for exact integer sqrt. Return True if no divisor. Keep concise. Ensure type hints. Could mention complexity. Final only answer.",
+      "content": "```python\nimport math\n\ndef is_prime(n: int) -> bool:\n    if n < 2:\n        return False\n    if n == 2:\n        return True\n    if n % 2 == 0:\n        return False\n\n    for i in range(3, math.isqrt(n) + 1, 2):\n        if n % i == 0:\n            return False\n    return True\n```\n\nUses `math.isqrt(n)` for an exact integer square root, so it checks divisors only up to `sqrt(n)`.",
+      "decode_tps": 116.2
+    },
+    {
+      "idx": 2,
+      "prompt": "What is the time and space complexity of merge sort? Reply in 2 sentences.",
+      "completion_tokens": 133,
+      "reasoning": "The user asks: What is the time and space complexity of merge sort? Reply in 2 sentences. Need answer concise. Need ensure correctness: Merge sort time complexity O(n log n) worst/average/best (for standard top-down). Space complexity O(n) auxiliary due to temporary arrays; in-place variants exist but standard is O(n). Need 2 sentences exactly. Final only two sentences.",
+      "content": "Merge sort has O(n log n) time complexity in the average, worst, and best cases. Its standard implementation uses O(n) auxiliary space for temporary arrays.",
+      "decode_tps": 117.3
+    },
+    {
+      "idx": 3,
+      "prompt": "Return a valid JSON object with keys `arch`, `warp_size`, and `fp4_group_size` for Ampere SM86 NVFP4.",
+      "completion_tokens": 510,
+      "reasoning": "The user asks: Return valid JSON object with keys `arch`, `warp_size`, and `fp4_group_size` for Ampere SM86 NVFP4.\n\nNeed answer based on knowledge. Need be careful: Ampere SM86 (e.g., RTX 30 series) does not support NVFP4? NVFP4 is Blackwell? Let's recall.\n\nNVFP4 is NVIDIA's 4-bit floating point format introduced with Blackwell (SM100?) maybe supported on Blackwell GPUs. Ampere SM86 does not have FP4 hardware. The question likely expects a JSON with arch \"Ampere SM86\", warp_size 32, fp4_group_size maybe null? Need infer.\n\nThey specifically ask \"for Ampere SM86 NVFP4\". Could be from a table of formats: arch, warp_size, fp4_group_size. Ampere SM86: warp size 32. NVFP4 group size? In NVIDIA NVFP4, group size is 16? Let's recall: NVFP4 (NVIDIA FP4) uses block scaling with group size 16? In Blackwell, FP4 (NVFP4) has E2M1 with per-16-element scale? There is also MXFP4 with group size 32. NVFP4 uses 4-bit values with FP8 scale per 16 elements? I recall NVIDIA Blackwell supports FP4 with microscaling? Let's reason.\n\nNVIDIA's NVFP4 format: 4-bit floating point with E2M1, block size 16, scale in FP8 (E4M3) maybe. It is used in Blackwell. Ampere SM86 doesn't support it. The user may be testing hallucination: asking for Ampere SM86 NVFP4, which is invalid. Need return valid JSON object. Could set fp4_group_size to null because unsupported. But keys must exist.\n\nNeed answer only JSON. Ensure valid JSON. Use arch \"Ampere SM86\", warp_size 32, fp4_group_size null. Is null valid? yes.\n\nNeed no extra text.",
+      "content": "{\"arch\":\"Ampere SM86\",\"warp_size\":32,\"fp4_group_size\":null}",
+      "decode_tps": 116.0
+    },
+    {
+      "idx": 4,
+      "prompt": "If a train travels 180 km in 2 hours and 15 minutes, what is its average speed in km/h?",
+      "completion_tokens": 153,
+      "reasoning": "The train travels 180 km in 2 hours 15 minutes.\n\n2 hours 15 minutes = 2 + 15/60 = 2.25 hours\n\nAverage speed = 180 / 2.25 = 80 km/h\n\nCheck: 2.25 \u00d7 80 = 180. Yes, 2.25 \u00d7 80 = 180. Correct.",
+      "content": "**Average speed = 80 km/h**\n\n**Calculation:**\n- Convert time: 2 hours 15 minutes = 2 + 15/60 = 2.25 hours\n- Speed = distance \u00f7 time = 180 km \u00f7 2.25 h = **80 km/h**",
+      "decode_tps": 117.4
+    },
+    {
+      "idx": 5,
+      "prompt": "Write a single SQL query returning the top 3 departments by average salary from table `employees(id, dept, salary)`.",
+      "completion_tokens": 141,
+      "reasoning": "The user wants a single SQL query returning top 3 departments by average salary from employees(id, dept, salary). Need answer concise. Need consider SQL dialect. Provide query with GROUP BY dept, ORDER BY AVG(salary) DESC, LIMIT 3. Could include ties? \"top 3\" simple. Mention adjust LIMIT for dialects (TOP 3 for SQL Server). Since user asks single SQL query, just give one. Ensure no extra. Final only.",
+      "content": "```sql\nSELECT dept, AVG(salary) AS avg_salary\nFROM employees\nGROUP BY dept\nORDER BY avg_salary DESC\nLIMIT 3;\n```",
+      "decode_tps": 117.0
+    },
+    {
+      "idx": 6,
+      "prompt": "Give the exact hexadecimal IEEE-754 float32 representation of -6.5.",
+      "completion_tokens": 512,
+      "reasoning": "The user wants exact hexadecimal IEEE-754 float32 representation of -6.5.\n\nCompute: 6.5 = 110.1 binary = 1.101 * 2^2. Sign = 1 (negative). Exponent = 2 + 127 = 129 = 10000001 binary. Mantissa: 101 followed by zeros (23 bits): 10100000000000000000000.\n\nBits: sign 1 | exponent 10000001 | mantissa 10100000000000000000000.\n\nConcatenate: 1 10000001 10100000000000000000000.\n\nLet's group into hex. 32 bits:\n1 10000001 10100000000000000000000\nWrite as string: \nsign: 1\nexponent: 10000001\nmantissa: 10100000000000000000000\n\nFull: \"1\" + \"10000001\" + \"10100000000000000000000\"\n= \"1\" \"10000001\" = \"110000001\" (9 bits)\n+ \"10100000000000000000000\" (23 bits) = 32 bits.\nString: 11000000110100000000000000000000? Let's count carefully.\n\n\"1\" (1)\n\"10000001\" (8) -> total 9: positions: 1 1 0 0 0 0 0 0 1? Wait sign=1, exponent=10000001. So first 9 bits: sign bit '1', then exponent bits '1','0','0','0','0','0','0','1'. That gives: 1 1 0 0 0 0 0 0 1 = \"110000001\". Yes 9 chars: positions: 1:'1',2:'1',3:'0',4:'0',5:'0',6:'0',7:'0',8:'0',9:'1'. Good.\n\nMantissa 23 bits: \"101\" + \"000000000000000000000\" (20 zeros) = 3+20=23. So full string: \"110000001\"",
+      "content": "",
+      "decode_tps": 115.9
+    },
+    {
+      "idx": 7,
+      "prompt": "Reverse the words in the sentence: 'Ampere dual GPUs love NVLink bandwidth'. Output only the reversed sentence.",
+      "completion_tokens": 100,
+      "reasoning": "The user wants to reverse the words in the sentence: 'Ampere dual GPUs love NVLink bandwidth'.\n\nWords: Ampere, dual, GPUs, love, NVLink, bandwidth\nReversed order: bandwidth, NVLink, love, GPUs, dual, Ampere\n\nOutput only the reversed sentence: \"bandwidth NVLink love GPUs dual Ampere\"\n\nNeed to ensure exact output only.",
+      "content": "bandwidth NVLink love GPUs dual Ampere",
+      "decode_tps": 118.0
+    },
+    {
+      "idx": 8,
+      "prompt": "Factor the polynomial x^2 - 5x - 14 over the integers.",
+      "completion_tokens": 107,
+      "reasoning": "We need answer factor. Need compute. x^2 -5x -14. Need two numbers product -14 sum -5: -7 and 2. (x-7)(x+2). Check: x^2+2x-7x-14=x^2-5x-14. Respond concise.",
+      "content": "\\[\nx^2 - 5x - 14 = (x - 7)(x + 2)\n\\]",
+      "decode_tps": 118.2
+    },
+    {
+      "idx": 9,
+      "prompt": "Write a 4-line bash command that counts `.py` files recursively under the current directory.",
+      "completion_tokens": 512,
+      "reasoning": "The user wants a 4-line bash command that counts .py files recursively under current directory. Need provide exactly 4 lines? We can give a code block with 4 lines. Need ensure correctness.\n\nBash:\ncount=$(find . -type f -name '*.py' | wc -l)\necho \"$count\"\nThat's 2 lines. Need 4-line command. Could do:\n#!/bin/bash\ncount=$(find . -type f -name '*.py' | wc -l)\necho \"Python files: $count\"\nexit 0\nThat's 4 lines but includes shebang and exit. Is that a \"command\"? Better 4 lines:\ntotal=0\nwhile IFS= read -r -d '' file; do total=$((total+1)); done < <(find . -type f -name '*.py' -print0)\necho \"$total\"\nexit 0\nThat's 4 lines but uses process substitution and exit. Simpler:\ncount=$(find . -type f -name '*.py' | wc -l)\necho \"$count\"\n# done\nexit 0\nBut comment line maybe okay. Need 4-line bash command. Could be:\nfind . -type f -name '*.py' -print0 | tr -cd '\\0' | wc -c\nNo, 1 line.\n\nNeed answer concise. Ensure no extra lines? Provide code block only. 4 lines inside code block. Use:\ncount=$(find . -type f -name '*.py' | wc -l)\necho \"$count\"\n# end\nexit 0\nThis is valid but comment is filler. Better meaningful 4 lines:\nshopt -s dotglob nullglob\ncount=$(find . -type f -name '*.py' | wc -l)\necho \"$count\"\nexit 0\nshopt not needed.\n\nMaybe:\nfiles=$(find . -type f -name '*.py')\ncount=$(printf '%s\\n' \"$files\" | grep -c .)\necho \"$count\"\nexit 0\nIf no files, printf '%s\\n",
+      "content": "",
+      "decode_tps": 115.8
+    },
+    {
+      "idx": 10,
+      "prompt": "What is the derivative of f(x) = x^3 * ln(x)?",
+      "completion_tokens": 211,
+      "reasoning": "The user asks for derivative of f(x) = x^3 * ln(x). Use product rule: d/dx[x^3] = 3x^2, d/dx[ln x] = 1/x. Product = 3x^2 ln x + x^3*(1/x) = 3x^2 ln x + x^2. Need answer concise. Ensure domain x>0. Provide maybe simplified x^2(3 ln x +1).",
+      "content": "Using the product rule:\n\n\\[\nf'(x)=3x^2\\ln(x)+x^3\\cdot \\frac1x\n=3x^2\\ln(x)+x^2\n\\]\n\nSo,\n\n\\[\n\\boxed{f'(x)=x^2(3\\ln(x)+1)}\n\\]\n\nfor \\(x>0\\).",
+      "decode_tps": 116.7
+    },
+    {
+      "idx": 11,
+      "prompt": "List the first 10 Fibonacci numbers starting from 0, 1 separated by commas only.",
+      "completion_tokens": 158,
+      "reasoning": "The user wants the first 10 Fibonacci numbers starting from 0, 1. Let's list: 0, 1, 1, 2, 3, 5, 8, 13, 21, 34. Count: 1st 0, 2nd 1, 3rd 1, 4th 2, 5th 3, 6th 5, 7th 8, 8th 13, 9th 21, 10th 34. Separated by commas only. Need final only with list. Ensure no extra text.",
+      "content": "0,1,1,2,3,5,8,13,21,34",
+      "decode_tps": 116.7
+    }
+  ],
+  "context_scaling": [
+    {
+      "bucket": "1K",
+      "trials": 3,
+      "prompt_tokens_mean": 928,
+      "ttft_s": {
+        "mean": 0.218,
+        "std": 0.052
+      },
+      "prefill_tps": {
+        "mean": 4396.804,
+        "std": 920.74
+      },
+      "decode_tps": {
+        "mean": 114.678,
+        "std": 0.123
+      },
+      "spec_acc_len": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "prefix_cache_hits_total": 0,
+      "needle_hits": "3/3"
+    },
+    {
+      "bucket": "4K",
+      "trials": 3,
+      "prompt_tokens_mean": 3858,
+      "ttft_s": {
+        "mean": 0.721,
+        "std": 0.075
+      },
+      "prefill_tps": {
+        "mean": 5391.182,
+        "std": 530.337
+      },
+      "decode_tps": {
+        "mean": 113.576,
+        "std": 0.153
+      },
+      "spec_acc_len": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "prefix_cache_hits_total": 0,
+      "needle_hits": "3/3"
+    },
+    {
+      "bucket": "16K",
+      "trials": 3,
+      "prompt_tokens_mean": 16694,
+      "ttft_s": {
+        "mean": 2.967,
+        "std": 0.076
+      },
+      "prefill_tps": {
+        "mean": 5628.147,
+        "std": 141.49
+      },
+      "decode_tps": {
+        "mean": 110.007,
+        "std": 0.061
+      },
+      "spec_acc_len": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "prefix_cache_hits_total": 0,
+      "needle_hits": "3/3"
+    },
+    {
+      "bucket": "32K",
+      "trials": 3,
+      "prompt_tokens_mean": 33506,
+      "ttft_s": {
+        "mean": 6.157,
+        "std": 0.011
+      },
+      "prefill_tps": {
+        "mean": 5442.183,
+        "std": 9.29
+      },
+      "decode_tps": {
+        "mean": 105.579,
+        "std": 0.116
+      },
+      "spec_acc_len": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "prefix_cache_hits_total": 0,
+      "needle_hits": "3/3"
+    },
+    {
+      "bucket": "60K",
+      "trials": 3,
+      "prompt_tokens_mean": 61211,
+      "ttft_s": {
+        "mean": 12.381,
+        "std": 0.018
+      },
+      "prefill_tps": {
+        "mean": 4944.136,
+        "std": 7.217
+      },
+      "decode_tps": {
+        "mean": 99.38,
+        "std": 0.059
+      },
+      "spec_acc_len": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "prefix_cache_hits_total": 0,
+      "needle_hits": "3/3"
+    }
+  ],
+  "categories": [
+    {
+      "category": "Code (Python/CUDA)",
+      "decode_tps": {
+        "mean": 115.563,
+        "std": 0.051
+      },
+      "spec_acc_len": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "ttft_s": {
+        "mean": 0.07,
+        "std": 0.004
+      }
+    },
+    {
+      "category": "Math Reasoning",
+      "decode_tps": {
+        "mean": 115.837,
+        "std": 0.07
+      },
+      "spec_acc_len": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "ttft_s": {
+        "mean": 0.067,
+        "std": 0.0
+      }
+    },
+    {
+      "category": "Technical Prose",
+      "decode_tps": {
+        "mean": 115.516,
+        "std": 0.035
+      },
+      "spec_acc_len": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "ttft_s": {
+        "mean": 0.073,
+        "std": 0.004
+      }
+    },
+    {
+      "category": "Structured JSON",
+      "decode_tps": {
+        "mean": 115.69,
+        "std": 0.085
+      },
+      "spec_acc_len": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "ttft_s": {
+        "mean": 0.199,
+        "std": 0.019
+      }
+    }
+  ],
+  "concurrency": [
+    {
+      "concurrency": 1,
+      "prompt_tokens_per_req": 3817,
+      "comp_tokens_total": 493,
+      "wall_s": 5.02,
+      "ttft_p50_s": 0.68,
+      "ttft_max_s": 0.68,
+      "per_user_decode_tps": {
+        "mean": 113.364,
+        "std": 0.0
+      },
+      "agg_decode_tps": 113.5,
+      "agg_e2e_gen_tps": 98.2,
+      "spec_acc_len": 1.0,
+      "prefix_cache_hits": 0
+    },
+    {
+      "concurrency": 2,
+      "prompt_tokens_per_req": 3896,
+      "comp_tokens_total": 1024,
+      "wall_s": 7.2,
+      "ttft_p50_s": 1.32,
+      "ttft_max_s": 1.34,
+      "per_user_decode_tps": {
+        "mean": 87.034,
+        "std": 0.122
+      },
+      "agg_decode_tps": 173.9,
+      "agg_e2e_gen_tps": 142.2,
+      "spec_acc_len": 1.0,
+      "prefix_cache_hits": 0
+    },
+    {
+      "concurrency": 4,
+      "prompt_tokens_per_req": 3916,
+      "comp_tokens_total": 2048,
+      "wall_s": 9.56,
+      "ttft_p50_s": 2.3,
+      "ttft_max_s": 2.63,
+      "per_user_decode_tps": {
+        "mean": 69.494,
+        "std": 5.344
+      },
+      "agg_decode_tps": 249.0,
+      "agg_e2e_gen_tps": 214.2,
+      "spec_acc_len": 1.0,
+      "prefix_cache_hits": 0
+    },
+    {
+      "concurrency": 8,
+      "prompt_tokens_per_req": 3934,
+      "comp_tokens_total": 4096,
+      "wall_s": 13.82,
+      "ttft_p50_s": 3.63,
+      "ttft_max_s": 5.24,
+      "per_user_decode_tps": {
+        "mean": 50.936,
+        "std": 6.937
+      },
+      "agg_decode_tps": 328.1,
+      "agg_e2e_gen_tps": 296.3,
+      "spec_acc_len": 1.0,
+      "prefix_cache_hits": 0
+    }
+  ]
+}

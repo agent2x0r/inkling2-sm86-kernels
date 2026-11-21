@@ -1,0 +1,148 @@
+{
+  "model": "thinkingmachines/Inkling-2-Mini",
+  "timestamp": "2026-11-21T20:05:30Z",
+  "benchmarks": {
+    "humaneval": {
+      "benchmark": "HumanEval",
+      "total": 164,
+      "passed": 158,
+      "pass_at_1_pct": 96.34,
+      "elapsed_s": 136.7,
+      "agg_comp_tps": 697.1,
+      "failures": [
+        {
+          "task_id": "HumanEval/38",
+          "passed": false,
+          "status": "NameError: name 'encode_cyclic' is not defined. Did you mean: 'decode_cyclic'?",
+          "finish_reason": "stop",
+          "comp_tokens": 697
+        },
+        {
+          "task_id": "HumanEval/50",
+          "passed": false,
+          "status": "NameError: name 'encode_shift' is not defined. Did you mean: 'decode_shift'?",
+          "finish_reason": "stop",
+          "comp_tokens": 574
+        },
+        {
+          "task_id": "HumanEval/93",
+          "passed": false,
+          "status": "AssertionError: This prints if this assert fails 1 (good for debugging!)",
+          "finish_reason": "stop",
+          "comp_tokens": 1550
+        },
+        {
+          "task_id": "HumanEval/99",
+          "passed": false,
+          "status": "ImportError: cannot import name 'ROUND_HALF_AWAY_FROM_ZERO' from 'decimal' (/usr/lib/python3.12/decimal.py)",
+          "finish_reason": "stop",
+          "comp_tokens": 529
+        },
+        {
+          "task_id": "HumanEval/132",
+          "passed": false,
+          "status": "AssertionError: This prints if this assert fails 1 (good for debugging!)",
+          "finish_reason": "length",
+          "comp_tokens": 4096
+        },
+        {
+          "task_id": "HumanEval/145",
+          "passed": false,
+          "status": "AssertionError",
+          "finish_reason": "stop",
+          "comp_tokens": 3016
+        }
+      ]
+    },
+    "gsm8k": {
+      "benchmark": "GSM8K",
+      "total": 200,
+      "passed": 190,
+      "accuracy_pct": 95.0,
+      "elapsed_s": 67.1,
+      "agg_comp_tps": 564.6,
+      "failures": [
+        {
+          "idx": 7,
+          "passed": false,
+          "gold": "160",
+          "pred": "160 minutes",
+          "finish_reason": "stop",
+          "comp_tokens": 318
+        },
+        {
+          "idx": 14,
+          "passed": false,
+          "gold": "60",
+          "pred": "60\\%",
+          "finish_reason": "stop",
+          "comp_tokens": 113
+        },
+        {
+          "idx": 38,
+          "passed": false,
+          "gold": "10",
+          "pred": "10 mph",
+          "finish_reason": "stop",
+          "comp_tokens": 244
+        },
+        {
+          "idx": 51,
+          "passed": false,
+          "gold": "5",
+          "pred": "5 hours",
+          "finish_reason": "stop",
+          "comp_tokens": 216
+        },
+        {
+          "idx": 93,
+          "passed": false,
+          "gold": "36",
+          "pred": "11",
+          "finish_reason": "stop",
+          "comp_tokens": 320
+        },
+        {
+          "idx": 100,
+          "passed": false,
+          "gold": "175",
+          "pred": "765",
+          "finish_reason": "stop",
+          "comp_tokens": 731
+        },
+        {
+          "idx": 119,
+          "passed": false,
+          "gold": "95200",
+          "pred": "99076.92",
+          "finish_reason": "stop",
+          "comp_tokens": 977
+        },
+        {
+          "idx": 140,
+          "passed": false,
+          "gold": "20",
+          "pred": "20\\%",
+          "finish_reason": "stop",
+          "comp_tokens": 108
+        },
+        {
+          "idx": 174,
+          "passed": false,
+          "gold": "95",
+          "pred": "95 minutes",
+          "finish_reason": "stop",
+          "comp_tokens": 169
+        },
+        {
+          "idx": 184,
+          "passed": false,
+          "gold": "25",
+          "pred": "100\\%",
+          "finish_reason": "stop",
+          "comp_tokens": 671
+        }
+      ]
+    }
+  }
+}
