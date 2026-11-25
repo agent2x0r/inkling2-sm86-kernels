@@ -1,0 +1,64 @@
+{
+  "long_context_fp8": [
+    {
+      "bucket": "64K",
+      "prompt_tokens": 67163,
+      "completion_tokens": 512,
+      "ttft_s": 13.75,
+      "prefill_tps": 4885.6,
+      "decode_tps": 148.7,
+      "spec_acc_len": 2.59,
+      "prefix_cache_hits": 0,
+      "needle_hit": true,
+      "needle": "FP8CHK-4100"
+    },
+    {
+      "bucket": "128K",
+      "prompt_tokens": 130946,
+      "completion_tokens": 512,
+      "ttft_s": 33.45,
+      "prefill_tps": 3914.1,
+      "decode_tps": 146.5,
+      "spec_acc_len": 2.76,
+      "prefix_cache_hits": 0,
+      "needle_hit": true,
+      "needle": "FP8CHK-4417"
+    },
+    {
+      "bucket": "200K",
+      "prompt_tokens": 204739,
+      "completion_tokens": 512,
+      "ttft_s": 64.42,
+      "prefill_tps": 3178.4,
+      "decode_tps": 125.4,
+      "spec_acc_len": 2.59,
+      "prefix_cache_hits": 0,
+      "needle_hit": true,
+      "needle": "FP8CHK-4734"
+    },
+    {
+      "bucket": "256K",
+      "prompt_tokens": 265665,
+      "completion_tokens": 512,
+      "ttft_s": 96.48,
+      "prefill_tps": 2753.5,
+      "decode_tps": 111.5,
+      "spec_acc_len": 2.46,
+      "prefix_cache_hits": 0,
+      "needle_hit": true,
+      "needle": "FP8CHK-5051"
+    },
+    {
+      "bucket": "320K",
+      "prompt_tokens": 336567,
+      "completion_tokens": 512,
+      "ttft_s": 140.8,
+      "prefill_tps": 2390.4,
+      "decode_tps": 98.1,
+      "spec_acc_len": 2.34,
+      "prefix_cache_hits": 0,
+      "needle_hit": true,
+      "needle": "FP8CHK-5368"
+    }
+  ]
+}

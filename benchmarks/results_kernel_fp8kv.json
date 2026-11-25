@@ -1,0 +1,84 @@
+{
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "store_exact_matches": "200125/200125",
+  "load_finite_exact": "254/254",
+  "regimes": [
+    {
+      "regime": "Decode q=1, 16K KV",
+      "q_len": 1,
+      "seqlen_k": 16384,
+      "splits": 20,
+      "bf16_us": 66.6,
+      "fp8_us": 55.3,
+      "speedup": 1.2,
+      "fp8_read_gbs": 303.4,
+      "max_diff_vs_dequant_bf16": 0.0
+    },
+    {
+      "regime": "Decode q=1, 64K KV",
+      "q_len": 1,
+      "seqlen_k": 65536,
+      "splits": 20,
+      "bf16_us": 180.2,
+      "fp8_us": 121.9,
+      "speedup": 1.48,
+      "fp8_read_gbs": 550.7,
+      "max_diff_vs_dequant_bf16": 0.0
+    },
+    {
+      "regime": "Decode q=1, 128K KV",
+      "q_len": 1,
+      "seqlen_k": 131072,
+      "splits": 20,
+      "bf16_us": 340.0,
+      "fp8_us": 208.9,
+      "speedup": 1.63,
+      "fp8_read_gbs": 642.5,
+      "max_diff_vs_dequant_bf16": 0.0
+    },
+    {
+      "regime": "DSpark Verify q=8, 16K KV",
+      "q_len": 8,
+      "seqlen_k": 16384,
+      "splits": 20,
+      "bf16_us": 71.8,
+      "fp8_us": 61.4,
+      "speedup": 1.17,
+      "fp8_read_gbs": 273.1,
+      "max_diff_vs_dequant_bf16": 0.0
+    },
+    {
+      "regime": "DSpark Verify q=8, 64K KV",
+      "q_len": 8,
+      "seqlen_k": 65536,
+      "splits": 20,
+      "bf16_us": 185.3,
+      "fp8_us": 150.5,
+      "speedup": 1.23,
+      "fp8_read_gbs": 445.8,
+      "max_diff_vs_dequant_bf16": 0.0
+    },
+    {
+      "regime": "DSpark Verify q=8, 128K KV",
+      "q_len": 8,
+      "seqlen_k": 131072,
+      "splits": 20,
+      "bf16_us": 340.0,
+      "fp8_us": 285.7,
+      "speedup": 1.19,
+      "fp8_read_gbs": 469.8,
+      "max_diff_vs_dequant_bf16": 0.0
+    },
+    {
+      "regime": "Prefill q=256, 32K KV",
+      "q_len": 256,
+      "seqlen_k": 32768,
+      "splits": 1,
+      "bf16_us": 2798.6,
+      "fp8_us": 3072.0,
+      "speedup": 0.91,
+      "fp8_read_gbs": 10.9,
+      "max_diff_vs_dequant_bf16": 0.0
+    }
+  ]
+}

@@ -1,10 +1,79 @@
 # Inkling-2-Mini on Ampere (SM86 / Dual RTX 3090) in Upstream vLLM V1
 
-Native **NVFP4/MXFP8 MoE + Vision (FA2) + Tool Calling + 7-Token DSpark Speculative Decoding** for [`thinkingmachines/Inkling-2-Mini`](https://huggingface.co/thinkingmachines/Inkling-2-Mini) on **Ampere (SM80/SM86)** GPUs inside **upstream vLLM V1** — **zero C++ compilation required**.
+Native **NVFP4/MXFP8 MoE + Software FP8 (`E4M3FN`) KV Cache (416K Context) + Vision (FA2) + Tool Calling + 7-Token DSpark Speculative Decoding** for [`thinkingmachines/Inkling-2-Mini`](https://huggingface.co/thinkingmachines/Inkling-2-Mini) on **Ampere (SM80/SM86)** GPUs inside **upstream vLLM V1** — **zero C++ compilation required**.
 
-![Inkling-2-Mini SM86 Benchmark Summary](benchmarks/inkling2_sm86_summary.png)
+![Inkling-2-Mini SM86 Software FP8 KV Cache Summary](benchmarks/inkling2_sm86_fp8kv_bento.png)
 
-## Summary of Verified Results (2× RTX 3090, 225W Cap, NVLink, TP=2)
+## Software FP8 (`E4M3FN`) KV Cache on SM86 (416K Context / 482.8K Pool)
+
+### What This Accomplishes
+- **Doubles context capacity (`2.02×` KV pool, `416K` single-request `max_model_len=425984`):** On a dedicated 2× RTX 3090 (`0.98` util, `250W`), unified KV capacity jumps from `239,061` tokens (`212,992` max len) to **`482,810` tokens** (`8.26 GiB/GPU`, `67,664` blocks, `1.13×` concurrency at `425,984`). Bonus: FP8 target pages (`block_size=128`, 1 B/elem) match BF16 DSpark draft pages (`block_size=64`, 2 B/elem) **1:1**, eliminating all **18 hybrid padding layers** (previously up to 350% waste in the draft KV group).
+- **Speeds up long-context attention on Ampere (`1.63×` faster decode kernel at 128K):** L2-flushed RTX 3090 kernel microbenchmarks (`H=12, HKV=4, D=128`) measure **`1.20×`** (16K), **`1.48×`** (64K), and **`1.63×`** (128K: `340.0 µs → 208.9 µs`, `642.5 GB/s` effective FP8 read BW) for decode, and **`1.17×–1.23×`** for 8-token DSpark verify — with **`0.0e+00`** max diff vs dequantized BF16 KV.
+- **Sustains `182 → 98.1 tok/s` decode out to `336,567` uncached tokens (`20/20` NIAH):** Single-user DSpark decode runs `182.4 tok/s` (1K) → `198.5 tok/s` (32K) → `148.7 tok/s` (67.2K) → `146.5 tok/s` (130.9K) → `111.5 tok/s` (265.7K) → **`98.1 tok/s` at 336.6K tokens**, with `0` prefix cache hits and `100%` needle recall at every bucket.
+- **Zero accuracy or feature loss:** **`99.39%`** HumanEval (`163/164` at `597.7 tok/s` agg, vs BF16 `160/164` / `97.56%`), **`97.5%`** GSM8K (`195/200` at `552.4 tok/s` agg, vs BF16 `196/200` / `98.0%`), **`2/2`** Vision FA2, **`2/2`** Tool Calling, and **`384.4 tok/s`** `c=8` concurrency (matching BF16 `383.4 tok/s`).
+- **Honest caveats:** Compute-bound 32K prefill attention (`q=256`) is `0.91×` vs BF16 due to software dequant ALU instructions, and the earlier checked-in BF16 speed/accuracy baseline ran at `225W` (`0.85` util) whereas the dedicated FP8 KV runs used `250W` (`0.98` util; KV pool numbers `239,061` vs `482,810` were both measured on the exact same `250W` / `0.98` util setup).
+
+### What Changed (Under the Hood — Zero C++ Compile)
+Ampere (`SM86`) lacks Ada/Hopper's `cvt.rn.f16x2.e4m3x2` instruction, and Triton rejects `fp8e4nv` pointer arguments on `< SM89`. Because `Inkling-2-Mini`'s `attention_prologue` already L2-clips K (`<= 22.63`) and RMS-normalizes V (`RMS = 1.0`), both fit unit-scale `E4M3FN` (`[-448, 448]`) with no calibration scales. [`vllm_sm86/apply_sm86_patch.py`](vllm_sm86/apply_sm86_patch.py) adds three idempotent Python/Triton fixes (plus [`vllm_sm86/serve_inkling2_sm86.sh`](vllm_sm86/serve_inkling2_sm86.sh) defaulting to `KV_CACHE_DTYPE=fp8`, `MAX_MODEL_LEN=425984`):
+
+1. **Native `uint8` KV Storage + Exact IEEE-754 RNE Store (`nvidia/attention.py`, `nvidia/ops/sconv.py`):** Keeps vLLM's `torch.uint8` cache tensor on `< SM89` so Triton never lowers an unsupported `fp8e4nv` pointer, and adds pure-Triton `_fp32_to_e4m3fn_u8` (**`200,125/200,125`** bit-exact vs `torch.float8_e4m3fn` across normals, subnormals, ties-to-even, and saturation).
+2. **5-Op SM80/SM86 PTX `E4M3` Dequant Load (`nvidia/ops/attention_sm90.py`):** Replaces SM89+ `cvt.rn.f16x2.e4m3x2` with `prmt.b32 0x1707` + `and` + `shr` + `lop3 0xEC` + non-FTZ `mul.rn.f16x2` by `256.0` — **`254/254`** finite `E4M3FN` values bit-exact, zero register spills, and `0.0e+00` diff vs dequantized BF16 across SWA and full attention.
+3. **DSpark Draft BF16 Guard & Upstream Config Bug Fix (`inkling2/speculator_config.py`, `v1/worker/gpu/spec_decode/speculator_config.py`):** Extends the BF16 draft KV guard to `< SM90` and fixes upstream `_resolve_checkpoint_config_class` returning base `DSparkSpeculatorConfig` instead of `Inkling2DSparkSpeculatorConfig` whenever `method="dspark"` is explicitly set (which previously skipped `adapt_draft_model_config`).
+
+<details>
+<summary><b>View Full Software FP8 KV Tables (Capacity/Accuracy, 1K–337K Scaling, SM86 Kernel Microbench)</b></summary>
+
+### BF16 KV vs Software FP8 KV (Dual RTX 3090, TP=2, DSpark)
+
+| Metric | BF16 KV (`auto`) | Software FP8 KV (`fp8`) | Delta / Notes |
+| :--- | ---: | ---: | :--- |
+| **Unified KV Pool (`0.98` util)** | `239,061` tokens | **`482,810` tokens** | **`2.02×`** capacity (`8.26 GiB/GPU`) |
+| **Max Single-User Context** | `212,992` (`1.12×`) | **`425,984` (`1.13×`)** | **`2.00×`** `max_model_len` (`416K`) |
+| **Hybrid Padding Layers** | `18` layers (`<=350%` waste) | **`0`** | FP8 `128×1B` == BF16 draft `64×2B` |
+| **HumanEval pass@1 (164)** | `160/164` (`97.56%`) | **`163/164` (`99.39%`)** | `597.7 tok/s` agg (`c=8`) |
+| **GSM8K Accuracy (200)** | `196/200` (`98.0%`) | **`195/200` (`97.5%`)** | `552.4 tok/s` agg (`c=8`) |
+| **Needle Recall (0% hits)** | `15/15` (`1K–60K`) | **`20/20` (`100%`)** | `1K → 336,567` tokens |
+| **Vision FA2 / Tool Calls** | `2/2` · `2/2` | **`2/2` · `2/2`** | Exact JSON args + FA2 parity |
+| **`c=8` Concurrency (4K/user)** | `383.4 tok/s` agg | **`384.4 tok/s` agg** | 12 greedy prompts: `239.3 tok/s` |
+
+*KV pool stats measured on the same dedicated 2× RTX 3090 (`250W`, `0.98` util). Checked-in BF16 speed/accuracy reference ran earlier at `225W`, `0.85` util.*
+
+### End-to-End Long-Context Scaling (`results_dspark_fp8kv.json` + `results_longctx_fp8kv.json`)
+
+| Bucket | Prompt Tok | TTFT | Prefill (tok/s) | DSpark Decode (tok/s) | Acc Len | Prefix Hits | NIAH |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: | :---: |
+| **1K** | `1,144` | `0.27 ± 0.04s` | `4,273` | **`182.4 ± 21.6`** | `2.92` | `0` | `3/3` |
+| **4K** | `4,335` | `0.81 ± 0.11s` | `5,424` | **`193.3 ± 21.1`** | `3.13` | `0` | `3/3` |
+| **16K** | `16,997` | `2.91 ± 0.06s` | `5,837` | **`177.8 ± 21.1`** | `2.91` | `0` | `3/3` |
+| **32K** | `34,017` | `6.18 ± 0.00s` | `5,501` | **`198.5 ± 17.7`** | `3.34` | `0` | `3/3` |
+| **60K** | `63,296` | `12.93 ± 0.02s` | `4,896` | **`157.0 ± 9.2`** | `2.74` | `0` | `3/3` |
+| **64K** | `67,163` | `13.75s` | `4,886` | **`148.7`** | `2.59` | `0` | `1/1` |
+| **128K** | `130,946` | `33.45s` | `3,914` | **`146.5`** | `2.76` | `0` | `1/1` |
+| **200K** | `204,739` | `64.42s` | `3,178` | **`125.4`** | `2.59` | `0` | `1/1` |
+| **256K** | `265,665` | `96.48s` | `2,754` | **`111.5`** | `2.46` | `0` | `1/1` |
+| **320K** | `336,567` | `140.80s` | `2,390` | **`98.1`** | `2.34` | `0` | `1/1` |
+
+### SM86 Attention Kernel Microbenchmark (`benchmarks/results_kernel_fp8kv.json`, Idle RTX 3090, L2-Flushed)
+
+| Attention Regime (`H=12, HKV=4, D=128`) | BF16 KV | SW FP8 KV | Speedup | FP8 Read BW | Max Diff vs Dequant BF16 |
+| :--- | ---: | ---: | ---: | ---: | ---: |
+| **Decode `q=1`, 16K KV (20 splits)** | `66.6 µs` | **`55.3 µs`** | **`1.20×`** | `303.4 GB/s` | `0.0e+00` |
+| **Decode `q=1`, 64K KV (20 splits)** | `180.2 µs` | **`121.9 µs`** | **`1.48×`** | `550.7 GB/s` | `0.0e+00` |
+| **Decode `q=1`, 128K KV (20 splits)** | `340.0 µs` | **`208.9 µs`** | **`1.63×`** | `642.5 GB/s` | `0.0e+00` |
+| **DSpark Verify `q=8`, 16K KV (20 splits)** | `71.8 µs` | **`61.4 µs`** | **`1.17×`** | `273.1 GB/s` | `0.0e+00` |
+| **DSpark Verify `q=8`, 64K KV (20 splits)** | `185.3 µs` | **`150.5 µs`** | **`1.23×`** | `445.8 GB/s` | `0.0e+00` |
+| **DSpark Verify `q=8`, 128K KV (20 splits)** | `340.0 µs` | **`285.7 µs`** | **`1.19×`** | `469.8 GB/s` | `0.0e+00` |
+| **Prefill `q=256`, 32K KV (`BM128`)** | `2,798.6 µs` | `3,072.0 µs` | `0.91×` | compute-bound | `0.0e+00` |
+
+See [`vllm_sm86/FP8_KV_TODO.md`](vllm_sm86/FP8_KV_TODO.md) for PTX unpack details and [`benchmarks/fp8kv_tables/`](benchmarks/fp8kv_tables/) for standalone PNG tables.
+
+</details>
+
+---
+
+## Baseline BF16 KV Results (2× RTX 3090, 225W Cap, NVLink, TP=2)
+
+![Inkling-2-Mini SM86 BF16 Baseline Summary](benchmarks/inkling2_sm86_summary.png)
 
 Tested on **2× NVIDIA GeForce RTX 3090** (`SM86`, 24 GiB GDDR6X each, 225 W power limit, NV4 NVLink bridge measuring `52.7 GB/s` unidirectional P2P and `840.4 GB/s` GDDR6X bandwidth), driven by an AMD FX-8350 (2012) host sharing the GPUs with ~2.2 GiB/GPU of co-resident services.
 
@@ -32,7 +101,8 @@ All runs use the **single official, unmodified upstream safetensors checkpoint**
 | **Attention, Embeddings, `unembed`, Shared Experts, `short_conv`, Vision** (994 tensors) | **BF16** | `3.59 GiB` | Native BF16 Tensor Cores |
 | **Attention-Residual Queries & Norms** (74 tensors) | **FP32** | `<0.01 GiB` | Native FP32 |
 | **DSpark Speculative Draft Head (`mtp.safetensors`, 54 tensors)** | **BF16** | `0.59 GiB` | Native BF16 Tensor Cores |
-| **KV Cache** | **BF16** (`kv_cache_dtype=auto`, unquantized) | `6.28 GiB / GPU` | Unified hybrid PagedAttention (`5,712` blocks) |
+| **KV Cache (default)** | **Software FP8 `E4M3FN`** (`kv_cache_dtype=fp8`, native `uint8` + BF16 draft) | `8.26 GiB / GPU` (`0.98` util) | 5-op SM86 PTX dequant (`482,810` tokens, `0` padding layers) |
+| **KV Cache (BF16 opt-in)** | **BF16** (`kv_cache_dtype=auto`, unquantized) | `8.47 GiB` (`0.98`) / `6.28 GiB` (`0.85`) | Unified hybrid PagedAttention (`239,061` / `81,966` tokens) |
 
 ---
 
@@ -50,7 +120,7 @@ Measured live via `nvidia-smi` and vLLM startup profiling on `2× 24 GiB` RTX 30
 | **Remaining Free Headroom (`nvidia-smi`)** | **`3.33 GiB`** (`3,410 MiB`) | Out of `24,576 MiB` (`24.0 GiB`) per RTX 3090 |
 
 **Dedicated Dual-RTX 3090 Headroom (no co-resident workloads):**
-With the entire `23.56 GiB` usable CUDA memory per card dedicated to vLLM (`--gpu-memory-utilization 0.92–0.95`), weights (`10.18 GiB`) + CUDA graphs/activation buffer (`2.36 GiB`) leave **`~9.6–10.2 GiB` / GPU** purely for KV cache (`1.53×–1.62×` our `6.28 GiB` pool) — scaling the unified BF16 KV pool to **`~125K–131K` tokens** (sufficient for a single **`128K`-context** session, `2×` concurrent `64K` streams, or `30+` concurrent `4K` coding sessions without KV cache quantization). Disabling DSpark (`ENABLE_DSPARK=0`) frees an additional `~0.6 GiB` of weights plus the DSpark draft KV group.
+With the entire `23.56 GiB` usable CUDA memory per card dedicated to vLLM (`--gpu-memory-utilization 0.92–0.95`), weights (`10.18 GiB`) + CUDA graphs/activation buffer (`2.36 GiB`) leave **`~9.6–10.2 GiB` / GPU** purely for KV cache (`1.53×–1.62×` the `6.28 GiB` pool) — scaling the unified BF16 KV pool to **`~125K–131K` tokens** (sufficient for a single **`128K`-context** session, `2×` concurrent `64K` streams, or `30+` concurrent `4K` coding sessions without KV cache quantization). Disabling DSpark (`ENABLE_DSPARK=0`) frees an additional `~0.6 GiB` of weights plus the DSpark draft KV group.
 
 ---
 
@@ -80,31 +150,46 @@ cd inkling2-sm86-kernels
 docker build -f vllm_sm86/Dockerfile.sm86 -t vllm-inkling2-sm86:latest .
 ```
 
-### 2. Launch Persistent Serving on Dual RTX 3090 (`TP=2`, 65K Context, DSpark)
+### 2. Launch Persistent Serving on Dual RTX 3090 (`TP=2`, 416K Context, Software FP8 KV + DSpark)
 Download `thinkingmachines/Inkling-2-Mini` locally (e.g. `/data/models/thinkingmachines/Inkling-2-Mini`), then run:
 ```bash
 MODEL_DIR=/data/models/thinkingmachines/Inkling-2-Mini \
 HOST_PORT=8001 \
 ENABLE_DSPARK=1 \
+KV_CACHE_DTYPE=fp8 \
+MAX_MODEL_LEN=425984 \
 ./vllm_sm86/serve_inkling2_sm86.sh start
 
 ./vllm_sm86/serve_inkling2_sm86.sh status
 ```
-Set `ENABLE_DSPARK=0` to benchmark Base (no speculative decoding) with identical flags.
+`KV_CACHE_DTYPE=fp8` and `MAX_MODEL_LEN=425984` (`416K`) are the defaults in `serve_inkling2_sm86.sh`. Set `KV_CACHE_DTYPE=auto MAX_MODEL_LEN=212992` to run BF16 KV, or `ENABLE_DSPARK=0` to benchmark Base (no speculative decoding).
 
-### 3. Reproduce Benchmarks & Chart
+### 3. Reproduce Benchmarks, Kernel Microbench & Visuals
 ```bash
-# Functional + speed suite (vision, tools, 12 greedy prompts, 1K..60K scaling, categories, c=1..8)
+# 1) Functional + speed suite (vision, tools, 12 greedy prompts, 1K..60K scaling, categories, c=1..8)
 python3 benchmarks/suite_functional_and_speed.py \
   --mode dspark \
   --base-url http://127.0.0.1:8001 \
-  --out benchmarks/results_dspark.json
+  --out benchmarks/results_dspark_fp8kv.json
 
-# Accuracy suite (HumanEval 164/164, GSM8K 200, MMMU-Pro 100)
-python3 benchmarks/suite_accuracy.py --base-url http://127.0.0.1:8001 --out benchmarks/results_accuracy.json
+# 2) Long-context 64K..320K uncached NIAH sweep (verifies prefix_cache_hits == 0)
+python3 benchmarks/bench_longctx_fp8kv.py \
+  --base-url http://127.0.0.1:8001 \
+  --out benchmarks/results_longctx_fp8kv.json
 
-# Regenerate the PNG summary chart directly from the JSON artifacts
-uv run --with matplotlib python3 benchmarks/plot_summary.py
+# 3) Accuracy suite (HumanEval 164/164, GSM8K 200)
+python3 benchmarks/suite_accuracy.py \
+  --base-url http://127.0.0.1:8001 \
+  --skip-mmmu \
+  --out benchmarks/results_accuracy_text_fp8kv.json
+
+# 4) Standalone SM86 PTX FP8 KV attention kernel microbenchmark (run on idle RTX 3090 inside container)
+docker run --rm --gpus '"device=0"' -v "$PWD:/work" --entrypoint python3 \
+  vllm-inkling2-sm86:latest /work/benchmarks/bench_fp8_kv_kernel.py \
+  --out /work/benchmarks/results_kernel_fp8kv.json
+
+# 5) Regenerate the FP8 KV Bento card + 3 X-ready tables directly from checked-in JSON artifacts
+uv run --with matplotlib python3 benchmarks/render_fp8kv_cards.py
 ```
 
 ---
@@ -154,21 +239,31 @@ All speed tests use real Python 3.12 stdlib source files with a unique nonce per
 
 ```text
 vllm_sm86/
-  apply_sm86_patch.py          # Idempotent ~50-line SM86 patcher for vllm/models/inkling2
+  apply_sm86_patch.py          # Idempotent SM86 + Software FP8 KV patcher for upstream vLLM V1
   Dockerfile.sm86              # Pinned zero-C++-rebuild Ampere Docker image
-  serve_inkling2_sm86.sh       # Persistent TP=2 vLLM + DSpark launcher
+  serve_inkling2_sm86.sh       # Persistent TP=2 vLLM + DSpark + FP8 KV (416K) launcher
+  FP8_KV_TODO.md               # Technical notes on SM86 software E4M3FN KV cache & PTX unpack
 benchmarks/
+  bench_longctx_fp8kv.py       # Reproducible 64K..320K uncached NIAH sweep (0% prefix hits)
+  bench_fp8_kv_kernel.py       # Standalone L2-flushed SM86 FP8 vs BF16 attention microbenchmark
+  render_fp8kv_cards.py        # Regenerates Bento summary PNG + 3 X-ready tables from JSONs
+  inkling2_sm86_fp8kv_bento.png
+  fp8kv_tables/                # 01_capacity_accuracy, 02_longctx_scaling, 03_kernel_microbench PNGs
+  results_dspark_fp8kv.json    # Software FP8 KV functional + 1K..60K + concurrency results
+  results_longctx_fp8kv.json   # Software FP8 KV 64K..320K uncached long-context results
+  results_accuracy_text_fp8kv.json # Software FP8 KV HumanEval (164) + GSM8K (200) results
+  results_kernel_fp8kv.json    # Idle RTX 3090 SM86 FP8 KV kernel microbenchmark JSON
   suite_functional_and_speed.py
   suite_accuracy.py
-  plot_summary.py              # Regenerates inkling2_sm86_summary.png from JSONs
+  plot_summary.py              # Regenerates BF16 baseline inkling2_sm86_summary.png from JSONs
   inkling2_sm86_summary.png
-  results_base.json            # Full paired Base benchmark output
-  results_dspark.json          # Full paired DSpark benchmark output
+  results_base.json            # Full paired BF16 Base benchmark output (225W)
+  results_dspark.json          # Full paired BF16 DSpark benchmark output (225W)
   greedy_dspark.json           # 12-prompt greedy parity capture
-  results_accuracy_text.json   # Full HumanEval (164) + GSM8K (200) per-item results
+  results_accuracy_text.json   # BF16 HumanEval (164) + GSM8K (200) per-item results
   results_accuracy_mmmu.json   # 100-item stratified MMMU-Pro per-item results
 labs/ & csrc/                  # Standalone SM86 CUDA C++ & Triton kernel labs (Roofline, ShortConv, Sheared-Bias Attention, PTX lop3 NVFP4/MXFP8 MoE)
-tests/                         # Unit tests for reference numerics & SM86 vLLM patcher
+tests/                         # Unit tests for reference numerics & SM86 + FP8 KV vLLM patcher
 ```
 
 ## License

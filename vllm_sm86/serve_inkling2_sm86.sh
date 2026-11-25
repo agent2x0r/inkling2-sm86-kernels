@@ -16,10 +16,20 @@ IMAGE="${IMAGE:-vllm-inkling2-sm86:latest}"
 MODEL_DIR="${MODEL_DIR:-/data/models/thinkingmachines/Inkling-2-Mini}"
 CACHE_DIR="${CACHE_DIR:-$HOME/.cache/inkling2-runtime}"
 HOST_PORT="${HOST_PORT:-8001}"
-GPU_MEM_UTIL="${GPU_MEM_UTIL:-0.85}"
-MAX_MODEL_LEN="${MAX_MODEL_LEN:-65536}"
-MAX_NUM_SEQS="${MAX_NUM_SEQS:-32}"
+# Dedicated serve on 2× 3090 (no co-resident GPU workloads).
+# 0.98 utilization with software FP8 (E4M3FN) KV + BF16 DSpark draft allocates
+# 482,810 unified KV tokens (0 padding layers), supporting ~416K single-user context (1.13x).
+# Set KV_CACHE_DTYPE=auto MAX_MODEL_LEN=212992 to fall back to BF16 KV.
+# Power is the machine's `gpu-power max` profile (250W, clocks unlocked).
+# Request side: pass reasoning_effort=low inside chat_template_kwargs.
+# Top-level reasoning_effort is ignored, and effort=high fills the completion
+# cap with reasoning before any answer is written.
+# PYTHONFAULTHANDLER dumps a traceback if the API process dies on a signal.
+GPU_MEM_UTIL="${GPU_MEM_UTIL:-0.98}"
+MAX_MODEL_LEN="${MAX_MODEL_LEN:-425984}"
+MAX_NUM_SEQS="${MAX_NUM_SEQS:-8}"
 ENABLE_DSPARK="${ENABLE_DSPARK:-1}"
+KV_CACHE_DTYPE="${KV_CACHE_DTYPE:-fp8}"
 
 cmd="${1:-start}"
 
@@ -35,6 +45,9 @@ case "$cmd" in
         '{"method":"dspark","num_speculative_tokens":7,"draft_sample_method":"probabilistic"}'
       )
     fi
+    if [[ "$KV_CACHE_DTYPE" != "auto" ]]; then
+      extra_args+=(--kv-cache-dtype "$KV_CACHE_DTYPE")
+    fi
 
     docker run -d \
       --name "$CONTAINER_NAME" \
@@ -49,6 +62,7 @@ case "$cmd" in
       -e TORCH_EXTENSIONS_DIR=/cache/torch_ext \
       -e VLLM_CACHE_ROOT=/cache/vllm \
       -e VLLM_WORKER_MULTIPROC_METHOD=spawn \
+      -e PYTHONFAULTHANDLER=1 \
       "$IMAGE" \
       /model \
       --served-model-name thinkingmachines/Inkling-2-Mini \
@@ -63,6 +77,10 @@ case "$cmd" in
       --enable-auto-tool-choice \
       --tool-call-parser inkling \
       "${extra_args[@]}"
+
+    if docker network inspect inference-net >/dev/null 2>&1; then
+      docker network connect inference-net "$CONTAINER_NAME" 2>/dev/null || true
+    fi
     ;;
   stop)
     docker rm -f "$CONTAINER_NAME"

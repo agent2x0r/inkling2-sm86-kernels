@@ -1,0 +1,73 @@
+{
+  "model": "thinkingmachines/Inkling-2-Mini",
+  "timestamp": "2026-11-25T04:04:33Z",
+  "benchmarks": {
+    "humaneval": {
+      "benchmark": "HumanEval",
+      "total": 164,
+      "passed": 163,
+      "pass_at_1_pct": 99.39,
+      "elapsed_s": 143.3,
+      "agg_comp_tps": 597.7,
+      "failures": [
+        {
+          "task_id": "HumanEval/145",
+          "passed": false,
+          "status": "AssertionError",
+          "finish_reason": "stop",
+          "comp_tokens": 2003
+        }
+      ]
+    },
+    "gsm8k": {
+      "benchmark": "GSM8K",
+      "total": 200,
+      "passed": 195,
+      "accuracy_pct": 97.5,
+      "elapsed_s": 71.5,
+      "agg_comp_tps": 552.4,
+      "failures": [
+        {
+          "idx": 12,
+          "passed": false,
+          "gold": "13",
+          "pred": "12",
+          "finish_reason": "stop",
+          "comp_tokens": 952
+        },
+        {
+          "idx": 93,
+          "passed": false,
+          "gold": "36",
+          "pred": "11",
+          "finish_reason": "stop",
+          "comp_tokens": 258
+        },
+        {
+          "idx": 119,
+          "passed": false,
+          "gold": "95200",
+          "pred": "99076.92",
+          "finish_reason": "stop",
+          "comp_tokens": 1500
+        },
+        {
+          "idx": 135,
+          "passed": false,
+          "gold": "40",
+          "pred": "55",
+          "finish_reason": "stop",
+          "comp_tokens": 649
+        },
+        {
+          "idx": 184,
+          "passed": false,
+          "gold": "25",
+          "pred": "100\\%",
+          "finish_reason": "stop",
+          "comp_tokens": 548
+        }
+      ]
+    }
+  }
+}
